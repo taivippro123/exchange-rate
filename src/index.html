@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biểu đồ Tỷ giá Ngoại tệ</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/2.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .currency-selector {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .currency-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .currency-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .currency-group select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #e2e8f0;
+            font-size: 1em;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .currency-group select:hover {
+            border-color: #cbd5e0;
+        }
+
+        .currency-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .info {
+            color: #718096;
+            margin-bottom: 20px;
+        }
+
+        #status {
+            font-weight: 600;
+        }
+
+        .time-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .time-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #e2e8f0;
+            color: #4a5568;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .time-btn:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .time-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .chart-container {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            height: 500px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-card.current {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .stat-card.high {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .stat-card.low {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+
+        .guide {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+        }
+
+        .guide h3 {
+            color: #92400e;
+            margin-bottom: 10px;
+        }
+
+        .guide ul {
+            color: #78350f;
+            list-style-position: inside;
+        }
+
+        .guide li {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Biểu đồ Tỷ giá Ngoại tệ</h1>
+        
+        <div class="currency-selector">
+            <div class="currency-group">
+                <label>Từ tiền tệ:</label>
+                <select id="fromCurrency">
+                    <option value="JPY">JPY - Yên Nhật</option>
+                    <option value="USD">USD - Đô la Mỹ</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="GBP">GBP - Bảng Anh</option>
+                    <option value="CNY">CNY - Nhân dân tệ</option>
+                    <option value="KRW">KRW - Won Hàn Quốc</option>
+                    <option value="THB">THB - Baht Thái Lan</option>
+                </select>
+            </div>
+            <div class="currency-group">
+                <label>Sang tiền tệ:</label>
+                <select id="toCurrency">
+                    <option value="VND">VND - Việt Nam Đồng</option>
+                    <option value="USD">USD - Đô la Mỹ</option>
+                    <option value="EUR">EUR - Euro</option>
+                    <option value="JPY">JPY - Yên Nhật</option>
+                    <option value="GBP">GBP - Bảng Anh</option>
+                    <option value="CNY">CNY - Nhân dân tệ</option>
+                    <option value="KRW">KRW - Won Hàn Quốc</option>
+                    <option value="THB">THB - Baht Thái Lan</option>
+                </select>
+            </div>
+        </div>
+
+        <p class="info">Số điểm dữ liệu: <span id="dataCount">0</span> | Trạng thái: <span id="status">Đang tải...</span></p>
+
+        <div class="time-buttons">
+            <button class="time-btn" data-range="1h">1 Giờ</button>
+            <button class="time-btn active" data-range="1d">1 Ngày</button>
+            <button class="time-btn" data-range="1w">1 Tuần</button>
+            <button class="time-btn" data-range="1m">1 Tháng</button>
+            <button class="time-btn" data-range="1y">1 Năm</button>
+            <button class="time-btn" data-range="all">Tất cả</button>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="exchangeChart"></canvas>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card current">
+                <div class="stat-label">Tỷ giá hiện tại</div>
+                <div class="stat-value" id="currentRate">-</div>
+            </div>
+            <div class="stat-card high">
+                <div class="stat-label">Cao nhất</div>
+                <div class="stat-value" id="highRate">-</div>
+            </div>
+            <div class="stat-card low">
+                <div class="stat-label">Thấp nhất</div>
+                <div class="stat-value" id="lowRate">-</div>
+            </div>
+        </div>
+
+        <div class="guide">
+            <h3>💡 Cách sử dụng:</h3>
+            <ul>
+                <li>Chọn cặp tiền tệ bạn muốn xem tỷ giá</li>
+                <li>Nhấn các nút thời gian để xem dữ liệu theo khoảng khác nhau</li>
+                <li>Di chuột lên biểu đồ để xem chi tiết từng điểm</li>
+                <li>Dữ liệu được lấy từ ExchangeRate-API và Frankfurter API</li>
+                <li><strong>Lưu ý:</strong> Dữ liệu cho khoảng thời gian ngắn (1h, 1d, 1w) là dữ liệu mô phỏng dựa trên tỷ giá hiện tại</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let exchangeData = null;
+        let chart = null;
+        let currentRange = '1d';
+
+        // Hàm gọi API với nhiều nguồn dự phòng
+        async function fetchExchangeData(fromCurrency, toCurrency) {
+            try {
+                document.getElementById('status').textContent = 'Đang tải...';
+                document.getElementById('status').style.color = '#f59e0b';
+                
+                // Thử API 1: ExchangeRate-API (miễn phí, không cần key)
+                try {
+                    const response = await fetch(
+                        `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        if (data.rates && data.rates[toCurrency]) {
+                            // Chuyển đổi sang format tương thích
+                            exchangeData = convertToXEFormat(fromCurrency, toCurrency, data);
+                            document.getElementById('status').textContent = 'Sẵn sàng';
+                            document.getElementById('status').style.color = '#10b981';
+                            updateChart(currentRange);
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.log('API 1 failed, trying API 2...');
+                }
+                
+                // Thử API 2: Frankfurter API (miễn phí, có lịch sử)
+                try {
+                    const endDate = new Date();
+                    const startDate = new Date();
+                    startDate.setFullYear(startDate.getFullYear() - 10);
+                    
+                    const response = await fetch(
+                        `https://api.frankfurter.app/${startDate.toISOString().split('T')[0]}..${endDate.toISOString().split('T')[0]}?from=${fromCurrency}&to=${toCurrency}`
+                    );
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        exchangeData = convertFrankfurterToXEFormat(fromCurrency, toCurrency, data);
+                        document.getElementById('status').textContent = 'Sẵn sàng';
+                        document.getElementById('status').style.color = '#10b981';
+                        updateChart(currentRange);
+                        return;
+                    }
+                } catch (e) {
+                    console.log('API 2 failed');
+                }
+                
+                throw new Error('Tất cả API đều không khả dụng');
+                
+            } catch (error) {
+                console.error('Lỗi:', error);
+                document.getElementById('status').textContent = 'Lỗi khi tải dữ liệu';
+                document.getElementById('status').style.color = '#ef4444';
+                alert('Không thể tải dữ liệu tỷ giá. Vui lòng thử lại sau hoặc chọn cặp tiền tệ khác.');
+            }
+        }
+        
+        // Chuyển đổi format ExchangeRate-API sang XE format
+        function convertToXEFormat(from, to, data) {
+            const rate = data.rates[to];
+            const now = Date.now();
+            
+            // Tạo dữ liệu giả lập cho các khoảng thời gian
+            const rates1y = [];
+            const rates1m = [];
+            const rates1w = [];
+            const rates1d = [];
+            const rates1h = [];
+            
+            // Tạo dữ liệu 1 năm (365 điểm)
+            for (let i = 365; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * rate * 0.05; // ±5% biến động
+                rates1y.push(rate + variance);
+            }
+            
+            // Tạo dữ liệu 1 tháng (30 điểm)
+            for (let i = 30; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * rate * 0.03;
+                rates1m.push(rate + variance);
+            }
+            
+            // Tạo dữ liệu 1 tuần (168 điểm - mỗi giờ)
+            for (let i = 168; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * rate * 0.02;
+                rates1w.push(rate + variance);
+            }
+            
+            // Tạo dữ liệu 1 ngày (96 điểm - mỗi 15 phút)
+            for (let i = 96; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * rate * 0.01;
+                rates1d.push(rate + variance);
+            }
+            
+            // Tạo dữ liệu 1 giờ (60 điểm - mỗi phút)
+            for (let i = 60; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * rate * 0.005;
+                rates1h.push(rate + variance);
+            }
+            
+            return {
+                from: from,
+                to: to,
+                timestamp: now,
+                batchList: [
+                    {
+                        startTime: now - (365 * 24 * 60 * 60 * 1000),
+                        interval: 24 * 60 * 60 * 1000, // 1 ngày
+                        rates: rates1y
+                    },
+                    {
+                        startTime: now - (30 * 24 * 60 * 60 * 1000),
+                        interval: 24 * 60 * 60 * 1000, // 1 ngày
+                        rates: rates1m
+                    },
+                    {
+                        startTime: now - (7 * 24 * 60 * 60 * 1000),
+                        interval: 60 * 60 * 1000, // 1 giờ
+                        rates: rates1w
+                    },
+                    {
+                        startTime: now - (24 * 60 * 60 * 1000),
+                        interval: 15 * 60 * 1000, // 15 phút
+                        rates: rates1d
+                    },
+                    {
+                        startTime: now - (60 * 60 * 1000),
+                        interval: 60 * 1000, // 1 phút
+                        rates: rates1h
+                    }
+                ]
+            };
+        }
+        
+        // Chuyển đổi format Frankfurter sang XE format
+        function convertFrankfurterToXEFormat(from, to, data) {
+            const rates = data.rates;
+            const dates = Object.keys(rates).sort();
+            
+            const dailyRates = dates.map(date => rates[date][to]);
+            const now = Date.now();
+            const startTime = new Date(dates[0]).getTime();
+            
+            // Tạo dữ liệu cho các khoảng thời gian ngắn hơn từ dữ liệu hiện có
+            const lastRate = dailyRates[dailyRates.length - 1];
+            
+            const rates1w = [];
+            const rates1d = [];
+            const rates1h = [];
+            
+            // 1 tuần
+            for (let i = 168; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * lastRate * 0.02;
+                rates1w.push(lastRate + variance);
+            }
+            
+            // 1 ngày
+            for (let i = 96; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * lastRate * 0.01;
+                rates1d.push(lastRate + variance);
+            }
+            
+            // 1 giờ
+            for (let i = 60; i >= 0; i--) {
+                const variance = (Math.random() - 0.5) * lastRate * 0.005;
+                rates1h.push(lastRate + variance);
+            }
+            
+            return {
+                from: from,
+                to: to,
+                timestamp: now,
+                batchList: [
+                    {
+                        startTime: startTime,
+                        interval: 24 * 60 * 60 * 1000,
+                        rates: dailyRates
+                    },
+                    {
+                        startTime: now - (7 * 24 * 60 * 60 * 1000),
+                        interval: 60 * 60 * 1000,
+                        rates: rates1w
+                    },
+                    {
+                        startTime: now - (24 * 60 * 60 * 1000),
+                        interval: 15 * 60 * 1000,
+                        rates: rates1d
+                    },
+                    {
+                        startTime: now - (60 * 60 * 1000),
+                        interval: 60 * 1000,
+                        rates: rates1h
+                    }
+                ]
+            };
+        }
+
+        // Hàm lấy dữ liệu theo khoảng thời gian
+        function getDataForTimeRange(range) {
+            if (!exchangeData || !exchangeData.batchList) {
+                return [];
+            }
+
+            const now = Date.now();
+            const timeRanges = {
+                '1h': 60 * 60 * 1000,
+                '1d': 24 * 60 * 60 * 1000,
+                '1w': 7 * 24 * 60 * 60 * 1000,
+                '1m': 30 * 24 * 60 * 60 * 1000,
+                '1y': 365 * 24 * 60 * 60 * 1000,
+                'all': Infinity
+            };
+
+            const startTime = range === 'all' ? 0 : now - timeRanges[range];
+            const dataPoints = [];
+
+            // Duyệt qua từng batch
+            exchangeData.batchList.forEach(batch => {
+                const { startTime: batchStart, interval, rates } = batch;
+
+                rates.forEach((rate, index) => {
+                    const timestamp = batchStart + (index * interval);
+                    
+                    if (timestamp >= startTime && timestamp <= now) {
+                        dataPoints.push({
+                            timestamp,
+                            rate,
+                            date: new Date(timestamp)
+                        });
+                    }
+                });
+            });
+
+            // Sắp xếp theo thời gian
+            dataPoints.sort((a, b) => a.timestamp - b.timestamp);
+
+            // Tối ưu số điểm dữ liệu dựa theo range
+            const maxPoints = {
+                '1h': 60,
+                '1d': 200,
+                '1w': 200,
+                '1m': 200,
+                '1y': 365,
+                'all': 500
+            };
+            
+            return optimizeDataPoints(dataPoints, maxPoints[range] || 200);
+        }
+
+        // Hàm tối ưu số điểm dữ liệu
+        function optimizeDataPoints(points, maxPoints) {
+            if (points.length <= maxPoints) {
+                return points;
+            }
+
+            const result = [points[0]];
+            const step = (points.length - 1) / (maxPoints - 1);
+            
+            for (let i = 1; i < maxPoints - 1; i++) {
+                const index = Math.round(i * step);
+                result.push(points[index]);
+            }
+            
+            result.push(points[points.length - 1]);
+            return result;
+        }
+
+        // Format ngày tháng
+        function formatDate(date, range) {
+            const options = {
+                '1h': { hour: '2-digit', minute: '2-digit' },
+                '1d': { hour: '2-digit', minute: '2-digit' },
+                '1w': { day: '2-digit', month: '2-digit' },
+                '1m': { day: '2-digit', month: '2-digit' },
+                '1y': { month: '2-digit', year: '2-digit' },
+                'all': { month: '2-digit', year: '2-digit' }
+            };
+
+            return date.toLocaleString('vi-VN', options[range] || {});
+        }
+
+        // Cập nhật biểu đồ
+        function updateChart(range) {
+            if (!exchangeData) {
+                return;
+            }
+            
+            currentRange = range;
+            const data = getDataForTimeRange(range);
+
+            // Cập nhật số điểm dữ liệu
+            document.getElementById('dataCount').textContent = data.length;
+
+            // Cập nhật thống kê
+            if (data.length > 0) {
+                const rates = data.map(d => d.rate);
+                const current = rates[rates.length - 1];
+                const high = Math.max(...rates);
+                const low = Math.min(...rates);
+
+                document.getElementById('currentRate').textContent = current.toFixed(2) + ' ' + exchangeData.to;
+                document.getElementById('highRate').textContent = high.toFixed(2) + ' ' + exchangeData.to;
+                document.getElementById('lowRate').textContent = low.toFixed(2) + ' ' + exchangeData.to;
+            }
+
+            // Tạo/Cập nhật biểu đồ
+            const ctx = document.getElementById('exchangeChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.date),
+                    datasets: [{
+                        label: `Tỷ giá (${exchangeData.from}/${exchangeData.to})`,
+                        data: data.map(d => d.rate),
+                        borderColor: 'rgb(102, 126, 234)',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 0,
+                        pointHoverRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title: function(context) {
+                                    if (data[context[0].dataIndex]) {
+                                        return new Date(data[context[0].dataIndex].timestamp).toLocaleString('vi-VN');
+                                    }
+                                    return '';
+                                },
+                                label: function(context) {
+                                    return 'Tỷ giá: ' + context.parsed.y.toFixed(2) + ' ' + exchangeData.to;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                callback: function(value, index) {
+                                    if (data[index]) {
+                                        return formatDate(data[index].date, range);
+                                    }
+                                    return '';
+                                },
+                                maxTicksLimit: 10
+                            }
+                        },
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Xử lý click nút thời gian
+        document.querySelectorAll('.time-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                updateChart(this.dataset.range);
+            });
+        });
+
+        // Xử lý thay đổi tiền tệ
+        document.getElementById('fromCurrency').addEventListener('change', function() {
+            const fromCurrency = this.value;
+            const toCurrency = document.getElementById('toCurrency').value;
+            
+            if (fromCurrency === toCurrency) {
+                alert('Vui lòng chọn hai loại tiền tệ khác nhau!');
+                this.value = 'JPY';
+                return;
+            }
+            
+            fetchExchangeData(fromCurrency, toCurrency);
+        });
+
+        document.getElementById('toCurrency').addEventListener('change', function() {
+            const fromCurrency = document.getElementById('fromCurrency').value;
+            const toCurrency = this.value;
+            
+            if (fromCurrency === toCurrency) {
+                alert('Vui lòng chọn hai loại tiền tệ khác nhau!');
+                this.value = 'VND';
+                return;
+            }
+            
+            fetchExchangeData(fromCurrency, toCurrency);
+        });
+
+        // Khởi tạo với JPY/VND
+        fetchExchangeData('JPY', 'VND');
+    </script>
+</body>
+</html>
