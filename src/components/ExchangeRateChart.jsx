@@ -26,6 +26,20 @@ ChartJS.register(
   Filler
 );
 
+const CURRENCIES = [
+  { code: 'JPY', name: 'Japanese Yen' },
+  { code: 'PHP', name: 'Philippine Peso' },
+  { code: 'VND', name: 'Vietnamese Dong' },
+  { code: 'IDR', name: 'Indonesian Rupiah' },
+  { code: 'USD', name: 'US Dollar' },
+  { code: 'CAD', name: 'Canadian Dollar' },
+  { code: 'SGD', name: 'Singapore Dollar' },
+];
+
+const getFlagUrl = (code) => {
+  return `https://wise.com/web-art/assets/flags/${code.toLowerCase()}.svg`;
+};
+
 const ExchangeRateChart = () => {
   const [fromCurrency, setFromCurrency] = useState('JPY');
   const [toCurrency, setToCurrency] = useState('VND');
@@ -347,8 +361,7 @@ const ExchangeRateChart = () => {
   }, [fromCurrency, toCurrency]);
 
   // Xử lý thay đổi currency
-  const handleFromCurrencyChange = (e) => {
-    const newFrom = e.target.value;
+  const handleFromCurrencyChange = (newFrom) => {
     if (newFrom === toCurrency) {
       alert('Vui lòng chọn hai loại tiền tệ khác nhau!');
       return;
@@ -356,8 +369,7 @@ const ExchangeRateChart = () => {
     setFromCurrency(newFrom);
   };
 
-  const handleToCurrencyChange = (e) => {
-    const newTo = e.target.value;
+  const handleToCurrencyChange = (newTo) => {
     if (newTo === fromCurrency) {
       alert('Vui lòng chọn hai loại tiền tệ khác nhau!');
       return;
@@ -450,16 +462,108 @@ const ExchangeRateChart = () => {
     { value: 'all', label: 'Tất cả' }
   ];
 
-  const currencies = [
-    { value: 'JPY', label: 'JPY - Yên Nhật' },
-    { value: 'USD', label: 'USD - Đô la Mỹ' },
-    { value: 'EUR', label: 'EUR - Euro' },
-    { value: 'GBP', label: 'GBP - Bảng Anh' },
-    { value: 'CNY', label: 'CNY - Nhân dân tệ' },
-    { value: 'KRW', label: 'KRW - Won Hàn Quốc' },
-    { value: 'THB', label: 'THB - Baht Thái Lan' },
-    { value: 'VND', label: 'VND - Việt Nam Đồng' }
-  ];
+  // CurrencyDropdown component
+  const CurrencyDropdown = ({ value, onChange, label }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [openUpward, setOpenUpward] = useState(false);
+    const dropdownRef = useRef(null);
+    const buttonRef = useRef(null);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+      if (isOpen && buttonRef.current && menuRef.current) {
+        const buttonRect = buttonRef.current.getBoundingClientRect();
+        const menuHeight = 280;
+        const spaceBelow = window.innerHeight - buttonRect.bottom;
+        const spaceAbove = buttonRect.top;
+        
+        if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+          setOpenUpward(true);
+        } else {
+          setOpenUpward(false);
+        }
+      }
+    }, [isOpen]);
+
+    const selectedCurrency = CURRENCIES.find(c => c.code === value);
+
+    return (
+      <div className="relative" ref={dropdownRef}>
+        <label className="block mb-2 text-gray-700 font-semibold">{label}</label>
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full h-12 pl-3 pr-4 bg-white border-2 border-gray-200 rounded-lg text-gray-900 font-medium cursor-pointer hover:border-gray-300 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all flex items-center justify-between gap-3"
+        >
+          <span className="flex items-center gap-2">
+            {selectedCurrency && (
+              <img
+                src={getFlagUrl(selectedCurrency.code)}
+                alt={selectedCurrency.code}
+                className="w-5 h-5 rounded-full object-cover"
+              />
+            )}
+            <span>{selectedCurrency?.code || 'Chọn tiền tệ'}</span>
+          </span>
+          <svg
+            className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
+        </button>
+
+        {isOpen && (
+          <div
+            ref={menuRef}
+            className={`absolute left-0 right-0 bg-white border-2 border-gray-200 rounded-lg shadow-lg z-[9999] max-h-[280px] overflow-y-auto ${
+              openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
+            }`}
+          >
+            {CURRENCIES.map((currency) => (
+              <button
+                key={currency.code}
+                type="button"
+                onClick={() => {
+                  onChange(currency.code);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-gray-50 transition-colors ${
+                  value === currency.code ? 'bg-indigo-50' : ''
+                }`}
+              >
+                <img
+                  src={getFlagUrl(currency.code)}
+                  alt={currency.code}
+                  className="w-5 h-5 rounded-full object-cover"
+                />
+                <span className="font-medium text-gray-900">{currency.code}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-purple-600 p-5">
@@ -468,32 +572,18 @@ const ExchangeRateChart = () => {
         
         <div className="flex flex-wrap gap-4 mb-5">
           <div className="flex-1 min-w-[200px]">
-            <label className="block mb-2 text-gray-700 font-semibold">Từ tiền tệ:</label>
-            <select
+            <CurrencyDropdown
               value={fromCurrency}
               onChange={handleFromCurrencyChange}
-              className="w-full p-3 rounded-lg border-2 border-gray-200 text-base cursor-pointer transition-colors hover:border-gray-300 focus:outline-none focus:border-indigo-500"
-            >
-              {currencies.map(currency => (
-                <option key={currency.value} value={currency.value}>
-                  {currency.label}
-                </option>
-              ))}
-            </select>
+              label="Từ tiền tệ:"
+            />
           </div>
           <div className="flex-1 min-w-[200px]">
-            <label className="block mb-2 text-gray-700 font-semibold">Sang tiền tệ:</label>
-            <select
+            <CurrencyDropdown
               value={toCurrency}
               onChange={handleToCurrencyChange}
-              className="w-full p-3 rounded-lg border-2 border-gray-200 text-base cursor-pointer transition-colors hover:border-gray-300 focus:outline-none focus:border-indigo-500"
-            >
-              {currencies.map(currency => (
-                <option key={currency.value} value={currency.value}>
-                  {currency.label}
-                </option>
-              ))}
-            </select>
+              label="Sang tiền tệ:"
+            />
           </div>
         </div>
 
