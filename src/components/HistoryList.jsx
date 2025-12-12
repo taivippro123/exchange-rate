@@ -25,7 +25,6 @@ const HistoryList = () => {
   
   // Filters
   const [filters, setFilters] = useState({
-    date: '',
     fromDate: '',
     toDate: '',
     from_currency: '',
@@ -75,7 +74,6 @@ const HistoryList = () => {
 
       // Add filters to URL
       const params = new URLSearchParams();
-      if (filters.date) params.append('date', filters.date);
       if (filters.fromDate) params.append('fromDate', filters.fromDate);
       if (filters.toDate) params.append('toDate', filters.toDate);
       if (filters.from_currency) params.append('from_currency', filters.from_currency);
@@ -110,7 +108,7 @@ const HistoryList = () => {
   useEffect(() => {
     fetchHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, filters.date, filters.fromDate, filters.toDate, filters.from_currency, filters.to_currency, filters.limit]);
+  }, [activeTab, filters.fromDate, filters.toDate, filters.from_currency, filters.to_currency, filters.limit]);
 
   // Expose refresh function globally
   useEffect(() => {
@@ -187,7 +185,6 @@ const HistoryList = () => {
 
   const clearFilters = () => {
     setFilters({
-      date: '',
       fromDate: '',
       toDate: '',
       from_currency: '',
@@ -250,35 +247,40 @@ const HistoryList = () => {
       {/* Filters */}
       <div className="mb-4 p-3 bg-slate-50 rounded-lg space-y-2">
         <div className="flex flex-wrap gap-2 items-end">
-          <div className="flex-1 min-w-[120px]">
-            <label className="block text-xs text-slate-600 mb-1">Ngày (YYYY-MM-DD)</label>
-            <input
-              type="date"
-              value={filters.date}
-              onChange={(e) => handleFilterChange('date', e.target.value)}
-              className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
-            />
-          </div>
-          <div className="flex-1 min-w-[120px]">
-            <label className="block text-xs text-slate-600 mb-1">Từ ngày</label>
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs text-slate-600 mb-1">Từ ngày giờ</label>
             <input
               type="datetime-local"
               value={filters.fromDate ? new Date(filters.fromDate).toISOString().slice(0, 16) : ''}
               onChange={(e) => {
                 const value = e.target.value;
-                handleFilterChange('fromDate', value ? new Date(value).toISOString() : '');
+                // Convert local datetime to ISO 8601 UTC format
+                if (value) {
+                  const localDate = new Date(value);
+                  const isoString = localDate.toISOString();
+                  handleFilterChange('fromDate', isoString);
+                } else {
+                  handleFilterChange('fromDate', '');
+                }
               }}
               className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
             />
           </div>
-          <div className="flex-1 min-w-[120px]">
-            <label className="block text-xs text-slate-600 mb-1">Đến ngày</label>
+          <div className="flex-1 min-w-[160px]">
+            <label className="block text-xs text-slate-600 mb-1">Đến ngày giờ</label>
             <input
               type="datetime-local"
               value={filters.toDate ? new Date(filters.toDate).toISOString().slice(0, 16) : ''}
               onChange={(e) => {
                 const value = e.target.value;
-                handleFilterChange('toDate', value ? new Date(value).toISOString() : '');
+                // Convert local datetime to ISO 8601 UTC format
+                if (value) {
+                  const localDate = new Date(value);
+                  const isoString = localDate.toISOString();
+                  handleFilterChange('toDate', isoString);
+                } else {
+                  handleFilterChange('toDate', '');
+                }
               }}
               className="w-full px-2 py-1.5 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-cyan-500/20"
             />
